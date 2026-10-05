@@ -84,6 +84,17 @@ data class ActiveInlineVideoPlayback(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: VaultRepository
 
+    // App Initial Resource Loading Screen States
+    private val _isAppResourcesLoading = MutableStateFlow(true)
+    val isAppResourcesLoading: StateFlow<Boolean> = _isAppResourcesLoading.asStateFlow()
+
+    private val _resourceLoadingStatus = MutableStateFlow("جاري فحص وتجهيز الموارد...")
+    val resourceLoadingStatus: StateFlow<String> = _resourceLoadingStatus.asStateFlow()
+
+    fun triggerReloadResources() {
+        seedInitialDataIfEmpty()
+    }
+
     init {
         val db = AppDatabase.getInstance(application)
         repository = VaultRepository(db)
@@ -92,10 +103,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun seedInitialDataIfEmpty() {
         viewModelScope.launch(Dispatchers.IO) {
+            _isAppResourcesLoading.value = true
+            _resourceLoadingStatus.value = "جاري تهيئة قاعدة البيانات المحلية..."
             // Post-frame delay to allow initial cold start rendering and entrance animations to finish smoothly
-            kotlinx.coroutines.delay(350L)
+            kotlinx.coroutines.delay(450L)
 
             val existingLinks = repository.allLinks.first()
+            _resourceLoadingStatus.value = "جاري فحص الروابط والمشاهد والموارد..."
             
             // Delete obsolete demo IDs if present
             val oldSceneIds = listOf(
@@ -139,6 +153,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (missingSampleScenes.isNotEmpty()) {
                 repository.insertLinks(missingSampleScenes)
             }
+            _resourceLoadingStatus.value = "اكتمل تحميل وتجهيز الموارد بنجاح!"
+            kotlinx.coroutines.delay(300L)
+            _isAppResourcesLoading.value = false
         }
     }
 

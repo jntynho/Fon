@@ -40,6 +40,10 @@ import com.example.ui.components.ExoPlayerOverlay
 import com.example.ui.components.GoPlayer
 import com.example.ui.components.PhotosetLightbox
 import com.example.ui.components.SmoothProgressIndicator
+import com.example.ui.components.BubbleLoadingAnimation
+import com.example.ui.components.HorizontalBubbleLoadingAnimation
+import com.example.ui.screens.ResourceLoadingScreen
+import androidx.compose.ui.layout.ContentScale
 import com.example.ui.theme.LocalAccentColor
 import com.example.ui.theme.LocalVaultPalette
 import kotlinx.coroutines.launch
@@ -67,6 +71,8 @@ fun MainAppShell(viewModel: MainViewModel) {
     val videoResolutionError by viewModel.videoResolutionError.collectAsStateWithLifecycle()
     val currentSettings by viewModel.settings.collectAsStateWithLifecycle()
     val activeInlineVideo by viewModel.activeInlineVideo.collectAsStateWithLifecycle()
+    val isAppResourcesLoading by viewModel.isAppResourcesLoading.collectAsStateWithLifecycle()
+    val resourceLoadingStatus by viewModel.resourceLoadingStatus.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val activity = context as? ComponentActivity
@@ -479,24 +485,32 @@ fun MainAppShell(viewModel: MainViewModel) {
                                 modifier = Modifier
                                     .widthIn(max = 320.dp)
                                     .padding(20.dp),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(20.dp),
                                 colors = CardDefaults.cardColors(containerColor = palette.cardBg)
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(20.dp),
+                                    modifier = Modifier.padding(22.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
-                                    SmoothProgressIndicator(
-                                        modifier = Modifier.size(44.dp),
-                                        color = accent,
-                                        strokeWidth = 3.5.dp
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_app_icon_full),
+                                        contentDescription = "App Icon",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(54.dp)
+                                            .clip(CircleShape)
+                                    )
+                                    HorizontalBubbleLoadingAnimation(
+                                        bubbleColor = accent,
+                                        bubbleCount = 4,
+                                        bubbleSize = 11.dp
                                     )
                                     Text(
                                         text = statusText,
-                                        color = palette.textPrimary,
+                                        color = palette.textSecondary,
                                         fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = FontWeight.Normal,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                 }
@@ -543,6 +557,17 @@ fun MainAppShell(viewModel: MainViewModel) {
                             }
                         )
                     }
+                }
+
+                // Initial Startup Resource Loading Screen (واجهة تحميل الموارد مع انيميشن الفقاعات)
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isAppResourcesLoading,
+                    enter = fadeIn(animationSpec = tween(250)),
+                    exit = fadeOut(animationSpec = tween(400))
+                ) {
+                    ResourceLoadingScreen(
+                        statusText = resourceLoadingStatus
+                    )
                 }
             }
         }
