@@ -14,6 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.MainViewModel
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import com.example.ui.screens.ResourceLoadingScreen
 import com.example.ui.screens.MainAppShell
 import com.example.ui.theme.GVJVaultTheme
 
@@ -62,13 +68,28 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            val isAppResourcesLoading by viewModel.isAppResourcesLoading.collectAsStateWithLifecycle()
+
             GVJVaultTheme(
                 paletteName = safeSettings.currentTheme,
                 accentColorHex = safeSettings.accentColorHex,
                 betaTestPrivacy = safeSettings.betaTestPrivacy
             ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MainAppShell(viewModel = viewModel)
+                    AnimatedContent(
+                        targetState = isAppResourcesLoading,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(350)) togetherWith
+                                    fadeOut(animationSpec = tween(400))
+                        },
+                        label = "RootAppLaunchTransition"
+                    ) { loading ->
+                        if (loading) {
+                            ResourceLoadingScreen()
+                        } else {
+                            MainAppShell(viewModel = viewModel)
+                        }
+                    }
                 }
             }
         }

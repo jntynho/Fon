@@ -111,13 +111,12 @@ fun ActionCircleButton(
     var lastClickTime by remember { mutableLongStateOf(0L) }
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && enabled && interactive) 0.90f else 1f,
-        animationSpec = if (isPressed) {
-            tween(durationMillis = 80, easing = FastOutLinearInEasing)
-        } else {
-            tween(durationMillis = 140, easing = FastOutSlowInEasing)
-        },
-        label = "press"
+        targetValue = if (isPressed && enabled && interactive) 0.86f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "press_spring"
     )
 
     Column(
@@ -231,11 +230,30 @@ fun MainActionMenu(
             )
         }
 
+        val bookmarkScale by animateFloatAsState(
+            targetValue = if (isSaved) 1.05f else 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            ),
+            label = "bookmark_pop"
+        )
+        val bookmarkRotation by animateFloatAsState(
+            targetValue = if (isSaved) 12f else 0f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            ),
+            label = "bookmark_rot"
+        )
+
         ActionCircleButton(
             label = if (isSaved) "Saved" else "Save",
-            color = BtnColors.Save,
+            color = if (isSaved) BtnColors.Save else BtnColors.Save.copy(alpha = 0.9f),
             onClick = onSave,
-            icon = painterResource(if (isSaved) R.drawable.ic_bookmark_saved else R.drawable.ic_bookmark_save)
+            icon = painterResource(if (isSaved) R.drawable.ic_bookmark_saved else R.drawable.ic_bookmark_save),
+            iconRotation = bookmarkRotation,
+            modifier = Modifier.scale(bookmarkScale)
         )
         ActionCircleButton(
             label = "Edit",

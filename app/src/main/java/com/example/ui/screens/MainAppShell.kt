@@ -400,19 +400,31 @@ fun MainAppShell(viewModel: MainViewModel) {
                     AnimatedContent(
                         targetState = currentScreen,
                         transitionSpec = {
-                            if (navDirection == MainViewModel.NavigationDirection.BACK) {
-                                (slideInHorizontally(animationSpec = tween(220, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
-                                        fadeIn(animationSpec = tween(200, easing = LinearOutSlowInEasing)))
+                            if (targetState is ScreenState.AddEditLink || initialState is ScreenState.AddEditLink) {
+                                (slideInVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)) { height -> height / 3 } +
+                                        fadeIn(animationSpec = tween(260)) +
+                                        scaleIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialScale = 0.95f))
                                     .togetherWith(
-                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutSlowInEasing)) { width -> width / 4 } +
-                                                fadeOut(animationSpec = tween(170))
+                                        slideOutVertically(animationSpec = tween(260, easing = FastOutSlowInEasing)) { height -> height / 3 } +
+                                                fadeOut(animationSpec = tween(200))
+                                    )
+                            } else if (navDirection == MainViewModel.NavigationDirection.BACK) {
+                                (slideInHorizontally(animationSpec = tween(280, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
+                                        fadeIn(animationSpec = tween(240, easing = LinearOutSlowInEasing)) +
+                                        scaleIn(animationSpec = tween(280, easing = FastOutSlowInEasing), initialScale = 0.96f))
+                                    .togetherWith(
+                                        slideOutHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)) { width -> width / 3 } +
+                                                fadeOut(animationSpec = tween(200)) +
+                                                scaleOut(animationSpec = tween(260), targetScale = 0.96f)
                                     )
                             } else {
-                                (slideInHorizontally(animationSpec = tween(220, easing = FastOutSlowInEasing)) { width -> width / 4 } +
-                                        fadeIn(animationSpec = tween(200, easing = LinearOutSlowInEasing)))
+                                (slideInHorizontally(animationSpec = tween(280, easing = FastOutSlowInEasing)) { width -> width / 3 } +
+                                        fadeIn(animationSpec = tween(240, easing = LinearOutSlowInEasing)) +
+                                        scaleIn(animationSpec = tween(280, easing = FastOutSlowInEasing), initialScale = 0.96f))
                                     .togetherWith(
-                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
-                                                fadeOut(animationSpec = tween(170))
+                                        slideOutHorizontally(animationSpec = tween(260, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
+                                                fadeOut(animationSpec = tween(200)) +
+                                                scaleOut(animationSpec = tween(260), targetScale = 0.96f)
                                     )
                             }
                         },
@@ -557,17 +569,6 @@ fun MainAppShell(viewModel: MainViewModel) {
                             }
                         )
                     }
-                }
-
-                // Initial Startup Resource Loading Screen (واجهة تحميل الموارد مع انيميشن الفقاعات)
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isAppResourcesLoading,
-                    enter = fadeIn(animationSpec = tween(250)),
-                    exit = fadeOut(animationSpec = tween(400))
-                ) {
-                    ResourceLoadingScreen(
-                        statusText = resourceLoadingStatus
-                    )
                 }
             }
         }

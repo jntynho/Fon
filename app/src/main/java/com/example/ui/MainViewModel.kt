@@ -153,8 +153,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (missingSampleScenes.isNotEmpty()) {
                 repository.insertLinks(missingSampleScenes)
             }
-            _resourceLoadingStatus.value = "اكتمل تحميل وتجهيز الموارد بنجاح!"
-            kotlinx.coroutines.delay(300L)
+
+            // Real Resource Pre-caching: Pre-fetch and cache images into Coil Memory & Disk Cache
+            try {
+                val context = getApplication<Application>()
+                val imageLoader = coil.Coil.imageLoader(context)
+                val allLinks = repository.allLinks.first()
+                val allActors = repository.allActors.first()
+                val allStudios = repository.allStudios.first()
+
+                val urlsToCache = mutableListOf<String>()
+                allLinks.take(20).forEach { link ->
+                    if (link.coverImage.isNotBlank()) urlsToCache.add(link.coverImage)
+                    if (link.galleryUrls.isNotEmpty()) urlsToCache.addAll(link.galleryUrls.take(2))
+                }
+                allActors.take(15).forEach { actor ->
+                    if (actor.imageUrl.isNotBlank()) urlsToCache.add(actor.imageUrl)
+                }
+                allStudios.take(15).forEach { studio ->
+                    val logo = studio.logoUrl
+                    if (!logo.isNullOrBlank()) urlsToCache.add(logo)
+                    val img = studio.imageUrl
+                    if (!img.isNullOrBlank()) urlsToCache.add(img)
+                }
+
+                urlsToCache.distinct().forEach { url ->
+                    val request = coil.request.ImageRequest.Builder(context)
+                        .data(url)
+                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .build()
+                    imageLoader.enqueue(request)
+                }
+            } catch (_: Exception) {}
+
+            kotlinx.coroutines.delay(150L)
             _isAppResourcesLoading.value = false
         }
     }
