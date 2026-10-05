@@ -192,14 +192,10 @@ fun StudioManagementScreen(
             )
         }
     }
-    SideEffect {
-        topBarContent.value = currentTopBar
-    }
-
     Scaffold(
         containerColor = palette.bg,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {}
+        contentWindowInsets = WindowInsets.statusBars,
+        topBar = { currentTopBar() }
     ) { padding ->
         if (sortedStudios.isEmpty()) {
             Box(

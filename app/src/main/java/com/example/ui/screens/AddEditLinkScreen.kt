@@ -250,13 +250,19 @@ fun AddEditLinkScreen(
     val cardShape = RoundedCornerShape(20.dp)
     val chipShape = RoundedCornerShape(24.dp)
 
-    val topBarContent = LocalTopBarContent.current
-    SideEffect {
-        topBarContent.value = {
+    Scaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background, // BG-FIX
+        contentWindowInsets = WindowInsets.statusBars,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
             TopAppBar(
                 title = { Text(if (existingLink != null) "Edit Scene" else "Add Scene", color = palette.textPrimary, fontWeight = FontWeight.Bold) }, // BG-FIX
                 navigationIcon = {
-                    IconButton(onClick = { viewModel.navigateBack() }) {
+                    IconButton(
+                        onClick = { viewModel.navigateBack() },
+                        modifier = Modifier.testTag("back_button")
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = palette.textPrimary) // BG-FIX
                     }
                 },
@@ -305,14 +311,6 @@ fun AddEditLinkScreen(
                 )
             )
         }
-    }
-
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background, // BG-FIX
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {}
     ) { padding ->
         Column(
             modifier = Modifier

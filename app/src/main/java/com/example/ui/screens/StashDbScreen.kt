@@ -104,7 +104,7 @@ private val StudioLogoBgLight = Color(0xFF1F2937) // Dark gray on light theme
 @Composable
 fun StashDbScreen(
     viewModel: MainViewModel,
-    onOpenDrawer: () -> Unit,
+    onOpenDrawer: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val palette = LocalVaultPalette.current
@@ -426,9 +426,12 @@ fun StashDbScreen(
         )
     }
 
-    val topBarContent = LocalTopBarContent.current
-    SideEffect {
-        topBarContent.value = {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = palette.bg,
+        contentWindowInsets = WindowInsets.statusBars,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
             TopAppBar(
                 title = {
                     if (isSearchExpanded) {
@@ -498,7 +501,8 @@ fun StashDbScreen(
                             onClick = {
                                 viewModel.setStashSearchExpanded(false)
                                 viewModel.setStashSearchQuery("")
-                            }
+                            },
+                            modifier = Modifier.testTag("close_search_button")
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -593,14 +597,6 @@ fun StashDbScreen(
                 )
             )
         }
-    }
-
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = palette.bg,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {}
     ) { padding ->
         Box(
             modifier = Modifier

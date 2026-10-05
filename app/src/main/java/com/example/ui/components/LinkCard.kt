@@ -150,7 +150,11 @@ fun LinkCard(
     // 4) Lightweight, snappy overlay animation with zero processing overhead
     val menuProgress by animateFloatAsState(
         targetValue = if (isOverlayActive) 1f else 0f,
-        animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+        animationSpec = if (isOverlayActive) {
+            tween(durationMillis = 380, easing = CubicBezierEasing(0.16f, 1.0f, 0.3f, 1.0f))
+        } else {
+            tween(durationMillis = 240, easing = FastOutLinearInEasing)
+        },
         label = "menu_progress"
     )
 
@@ -412,7 +416,8 @@ fun LinkCard(
             // Simple, lightweight action buttons overlay
             if (isOverlayVisible) {
                 CompositionLocalProvider(
-                    LocalActionsInteractive provides isOverlayActive
+                    LocalActionsInteractive provides isOverlayActive,
+                    LocalActionMenuProgress provides menuProgress
                 ) {
                     Box(
                         modifier = Modifier
@@ -424,30 +429,28 @@ fun LinkCard(
                         AnimatedContent(
                             targetState = if (isOverlayActive) currentMenuState else lastOpenMenuState,
                             transitionSpec = {
-                                (slideInVertically(
-                                    animationSpec = spring(
-                                        dampingRatio = 1.0f, // Critically damped - silky smooth, zero bounce
-                                        stiffness = Spring.StiffnessLow
-                                    )
-                                ) { height -> height / 5 } +
-                                        fadeIn(animationSpec = tween(350, easing = CubicBezierEasing(0.16f, 1.0f, 0.3f, 1.0f))) +
-                                        scaleIn(
-                                            initialScale = 0.88f,
-                                            animationSpec = spring(
-                                                dampingRatio = 1.0f,
-                                                stiffness = Spring.StiffnessLow
-                                            )
-                                        ))
-                                    .togetherWith(
-                                        slideOutVertically(
-                                            animationSpec = tween(220, easing = FastOutLinearInEasing)
-                                        ) { height -> height / 5 } +
-                                                fadeOut(animationSpec = tween(180)) +
-                                                scaleOut(
-                                                    targetScale = 0.88f,
-                                                    animationSpec = tween(180)
-                                                )
-                                    )
+                                val isForward = (initialState == CardActionMenuState.MAIN_MENU &&
+                                        (targetState == CardActionMenuState.QUALITY_MENU || targetState == CardActionMenuState.DELETE_CONFIRM))
+
+                                if (isForward) {
+                                    (slideInHorizontally(
+                                        animationSpec = tween(260, easing = FastOutSlowInEasing)
+                                    ) { width -> width / 3 } + fadeIn(animationSpec = tween(260)))
+                                        .togetherWith(
+                                            slideOutHorizontally(
+                                                animationSpec = tween(220, easing = FastOutLinearInEasing)
+                                            ) { width -> -width / 3 } + fadeOut(animationSpec = tween(200))
+                                        )
+                                } else {
+                                    (slideInHorizontally(
+                                        animationSpec = tween(260, easing = FastOutSlowInEasing)
+                                    ) { width -> -width / 3 } + fadeIn(animationSpec = tween(260)))
+                                        .togetherWith(
+                                            slideOutHorizontally(
+                                                animationSpec = tween(220, easing = FastOutLinearInEasing)
+                                            ) { width -> width / 3 } + fadeOut(animationSpec = tween(200))
+                                        )
+                                }
                             },
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.fillMaxWidth(),

@@ -579,15 +579,11 @@ fun HomeScreen(
             )
         }
     }
-    SideEffect {
-        topBarContent.value = currentTopBar
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {}
+        contentWindowInsets = WindowInsets.statusBars,
+        topBar = { currentTopBar() }
     ) { paddingValues ->
         // ========================================================
         // FEED LIST OF ITEMS (MATCHING SCREENSHOT LAYOUT)

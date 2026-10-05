@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 private val DialogScrim = Color.Black.copy(alpha = 0.65f) // BG-FIX
 
 val LocalTopBarContent = compositionLocalOf<MutableState<(@Composable () -> Unit)?>> {
-    error("No LocalTopBarContent provided")
+    mutableStateOf(null)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -352,41 +352,10 @@ fun MainAppShell(viewModel: MainViewModel) {
     ) {
         Scaffold(
             containerColor = palette.bg,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            topBar = {
-                if (activeVideo == null) {
-                    AnimatedContent(
-                        targetState = currentScreen,
-                        transitionSpec = {
-                            // Lateral Slide: Head slides horizontally in complete sync with the screen body!
-                            if (navDirection == MainViewModel.NavigationDirection.BACK) {
-                                (slideInHorizontally(animationSpec = tween(220, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
-                                        fadeIn(animationSpec = tween(200, easing = LinearOutSlowInEasing)))
-                                    .togetherWith(
-                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutSlowInEasing)) { width -> width / 4 } +
-                                                fadeOut(animationSpec = tween(170))
-                                    )
-                            } else {
-                                (slideInHorizontally(animationSpec = tween(220, easing = FastOutSlowInEasing)) { width -> width / 4 } +
-                                        fadeIn(animationSpec = tween(200, easing = LinearOutSlowInEasing)))
-                                    .togetherWith(
-                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
-                                                fadeOut(animationSpec = tween(170))
-                                    )
-                            }
-                        },
-                        label = "global_top_bar_transition"
-                    ) { screen ->
-                        val content = topBarMap[screen] ?: topBarContent.value
-                        content?.invoke()
-                    }
-                }
-            }
-        ) { globalPadding ->
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { _ ->
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = if (activeVideo == null) globalPadding.calculateTopPadding() else 0.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
                 AnimatedVisibility(
                     visible = appEntranceVisible,
@@ -400,15 +369,8 @@ fun MainAppShell(viewModel: MainViewModel) {
                     AnimatedContent(
                         targetState = currentScreen,
                         transitionSpec = {
-                            if (targetState is ScreenState.AddEditLink || initialState is ScreenState.AddEditLink) {
-                                (slideInVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)) { height -> height / 3 } +
-                                        fadeIn(animationSpec = tween(260)) +
-                                        scaleIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialScale = 0.95f))
-                                    .togetherWith(
-                                        slideOutVertically(animationSpec = tween(260, easing = FastOutSlowInEasing)) { height -> height / 3 } +
-                                                fadeOut(animationSpec = tween(200))
-                                    )
-                            } else if (navDirection == MainViewModel.NavigationDirection.BACK) {
+                            val isBack = navDirection == MainViewModel.NavigationDirection.BACK
+                            if (isBack) {
                                 (slideInHorizontally(animationSpec = tween(280, easing = FastOutSlowInEasing)) { width -> -width / 4 } +
                                         fadeIn(animationSpec = tween(240, easing = LinearOutSlowInEasing)) +
                                         scaleIn(animationSpec = tween(280, easing = FastOutSlowInEasing), initialScale = 0.96f))

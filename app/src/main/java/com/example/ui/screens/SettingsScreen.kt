@@ -311,9 +311,11 @@ fun SettingsScreen(
         )
     }
 
-    val topBarContent = LocalTopBarContent.current
-    SideEffect {
-        topBarContent.value = {
+    Scaffold(
+        modifier = modifier,
+        containerColor = palette.bg, // MUSE-REF
+        contentWindowInsets = WindowInsets.statusBars,
+        topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     AnimatedContent(
@@ -365,6 +367,7 @@ fun SettingsScreen(
                             .size(42.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF3B3C3E)) // MUSE-REF Circular back button #3B3C3E
+                            .testTag("back_button")
                             .clickable(
                                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                 indication = null, // No ripple or click effect!
@@ -386,13 +389,6 @@ fun SettingsScreen(
                 )
             )
         }
-    }
-
-    Scaffold(
-        modifier = modifier,
-        containerColor = palette.bg, // MUSE-REF
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {}
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             AnimatedContent(

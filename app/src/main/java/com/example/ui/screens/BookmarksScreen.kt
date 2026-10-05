@@ -462,15 +462,11 @@ fun BookmarksScreen(
             )
         }
     }
-    SideEffect {
-        topBarContent.value = currentTopBar
-    }
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = palette.bg, // BG-FIX
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {}
+        contentWindowInsets = WindowInsets.statusBars,
+        topBar = { currentTopBar() }
     ) { padding ->
         if (!isInitialDataLoaded) {
             LazyColumn(

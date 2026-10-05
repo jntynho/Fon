@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -54,32 +55,52 @@ object BtnColors {
 val LocalActionsInteractive = compositionLocalOf { true }
 val LocalActionMenuProgress = compositionLocalOf { 1f }
 
-private val SoftDecelEasing = CubicBezierEasing(0.22f, 1.0f, 0.36f, 1.0f)
+// Soft Overshoot Spring Pop Easing - starts at 0, rapidly expands past 1.0 (to ~1.18f), then gently settles back to 1.0f
+private val CenterZoomSpringEasing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1.0f)
 
 /**
- * Ultra-smooth, hardware-accelerated staggered entrance modifier.
- * Animates buttons sequentially from Left to Right on entrance (Leftmost appears first),
- * and from Right to Left on exit (Rightmost disappears first).
+ * Hardware-accelerated sequential Center Zoom-In with Soft Bounce Spring physics.
+ *
+ * Entrance:
+ * - Sequentially cascades from Left to Right (Index 0 = Leftmost pops first).
+ * - Origin is exact Center: expands from 0.0f -> soft overshoot bounce to ~1.18f -> settles smoothly at 1.0f.
+ * - Alpha transitions from 0f -> 1f.
+ *
+ * Exit:
+ * - Sequentially cascades in reverse from Right to Left (Rightmost shrinks first).
+ * - Smoothly shrinks back to center (1.0f -> 0.0f) with fade out.
  */
 fun Modifier.staggeredActionEntrance(
     progress: Float,
     indexFromLeft: Int,
-    totalItems: Int,
-    riseDistanceDp: Float = 36f
+    totalItems: Int
 ): Modifier = this.graphicsLayer {
-    val maxDelay = 0.44f
+    transformOrigin = TransformOrigin.Center
+
+    val maxDelay = 0.52f
     val stepDelay = if (totalItems > 1) maxDelay / (totalItems - 1) else 0f
+
+    // Stagger delay fraction from Left to Right:
     val delayFraction = (indexFromLeft * stepDelay).coerceIn(0f, maxDelay)
-    val rawProgress = if (delayFraction < 1f) {
+
+    val itemProgress = if (delayFraction < 1f) {
         ((progress - delayFraction) / (1f - delayFraction)).coerceIn(0f, 1f)
     } else progress
 
-    val eased = SoftDecelEasing.transform(rawProgress)
-    alpha = eased
-    val s = lerp(0.76f, 1.0f, eased)
-    scaleX = s
-    scaleY = s
-    translationY = (1f - eased) * riseDistanceDp.dp.toPx()
+    if (itemProgress <= 0.001f) {
+        alpha = 0f
+        scaleX = 0.0f
+        scaleY = 0.0f
+    } else {
+        val eased = CenterZoomSpringEasing.transform(itemProgress)
+        // Alpha becomes visible promptly as zoom starts
+        alpha = (itemProgress * 1.5f).coerceIn(0f, 1f)
+
+        // Expands from 0.0f, pops with bounce overshoot to ~1.18f, settles at 1.0f
+        val zoomScale = (eased * 1.0f).coerceAtLeast(0.0f)
+        scaleX = zoomScale
+        scaleY = zoomScale
+    }
 }
 
 private val ActionTextShadowSingle = TextStyle(
@@ -207,29 +228,38 @@ fun MainActionMenu(
     showMagnet: Boolean = true,
     showUrl: Boolean = true
 ) {
+    val progress = LocalActionMenuProgress.current
+    val totalButtons = (if (showMagnet) 1 else 0) + (if (showUrl) 1 else 0) + 3
+    var btnIndex = 0
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (showMagnet) {
+            val idx = btnIndex++
             ActionCircleButton(
                 label = "Magnet",
                 color = BtnColors.Magnet,
                 onClick = onMagnetClick,
                 icon = painterResource(R.drawable.ic_magnet),
-                iconRotation = 0f
+                iconRotation = 0f,
+                modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = idx, totalItems = totalButtons)
             )
         }
         if (showUrl) {
+            val idx = btnIndex++
             ActionCircleButton(
                 label = "URL",
                 color = BtnColors.Url,
                 onClick = onUrlClick,
-                icon = painterResource(R.drawable.ic_url_link)
+                icon = painterResource(R.drawable.ic_url_link),
+                modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = idx, totalItems = totalButtons)
             )
         }
 
+        val saveIdx = btnIndex++
         val bookmarkScale by animateFloatAsState(
             targetValue = if (isSaved) 1.05f else 1f,
             animationSpec = spring(
@@ -253,19 +283,27 @@ fun MainActionMenu(
             onClick = onSave,
             icon = painterResource(if (isSaved) R.drawable.ic_bookmark_saved else R.drawable.ic_bookmark_save),
             iconRotation = bookmarkRotation,
-            modifier = Modifier.scale(bookmarkScale)
+            modifier = Modifier
+                .staggeredActionEntrance(progress, indexFromLeft = saveIdx, totalItems = totalButtons)
+                .scale(bookmarkScale)
         )
+
+        val editIdx = btnIndex++
         ActionCircleButton(
             label = "Edit",
             color = BtnColors.Edit,
             onClick = onEdit,
-            icon = painterResource(R.drawable.ic_edit_pencil)
+            icon = painterResource(R.drawable.ic_edit_pencil),
+            modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = editIdx, totalItems = totalButtons)
         )
+
+        val delIdx = btnIndex++
         ActionCircleButton(
             label = "Delete",
             color = BtnColors.Delete,
             onClick = onDelete,
-            icon = painterResource(R.drawable.ic_delete_trash)
+            icon = painterResource(R.drawable.ic_delete_trash),
+            modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = delIdx, totalItems = totalButtons)
         )
     }
 }
@@ -278,25 +316,33 @@ fun QualitySelectMenu(
     hasHD: Boolean = true,
     has4K: Boolean = true
 ) {
+    val progress = LocalActionMenuProgress.current
+    val totalButtons = (if (hasHD) 1 else 0) + (if (has4K) 1 else 0)
+    var btnIndex = 0
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(22.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (hasHD) {
+            val idx = btnIndex++
             ActionCircleButton(
                 label = "HD",
                 color = BtnColors.Hd,
                 onClick = onSelectHD,
-                icon = painterResource(R.drawable.ic_quality_hd)
+                icon = painterResource(R.drawable.ic_quality_hd),
+                modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = idx, totalItems = totalButtons)
             )
         }
         if (has4K) {
+            val idx = btnIndex++
             ActionCircleButton(
                 label = "4K",
                 color = BtnColors.K4,
                 onClick = onSelect4K,
-                icon = painterResource(R.drawable.ic_quality_4k)
+                icon = painterResource(R.drawable.ic_quality_4k),
+                modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = idx, totalItems = totalButtons)
             )
         }
     }
@@ -308,6 +354,9 @@ fun DeleteConfirmMenu(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val progress = LocalActionMenuProgress.current
+    val totalButtons = 2
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -328,14 +377,16 @@ fun DeleteConfirmMenu(
                 label = "Cancel",
                 color = BtnColors.Cancel,
                 onClick = onCancel,
-                icon = painterResource(R.drawable.ic_action_cancel)
+                icon = painterResource(R.drawable.ic_action_cancel),
+                modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = 0, totalItems = totalButtons)
             )
             ActionCircleButton(
                 label = "Delete",
                 color = BtnColors.Delete,
                 onClick = onConfirm,
                 icon = painterResource(R.drawable.ic_delete_trash),
-                strongHaptic = true
+                strongHaptic = true,
+                modifier = Modifier.staggeredActionEntrance(progress, indexFromLeft = 1, totalItems = totalButtons)
             )
         }
     }
